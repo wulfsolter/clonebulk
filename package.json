@@ -1,0 +1,37 @@
+{
+  "name": "clonebulk",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "tsx clonebulk.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@types/pg-connection-string": "^2.0.0",
+    "async": "^3.2.4",
+    "cspell": "^8.15.2",
+    "knex": "^3.1.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "pg": "^8.11.0",
+    "pg-connection-string": "^2.6.0",
+    "prettier": "^3.3.3",
+    "tsx": "^4.19.1",
+    "window-size": "^1.1.1",
+    "winston": "^3.9.0"
+  },
+  "devDependencies": {
+    "@types/async": "^3.2.20",
+    "@types/lodash": "^4.14.195",
+    "@types/node": "^20.16.10",
+    "@types/pg": "^8.10.2",
+    "@types/window-size": "^1.1.1",
+    "eslint": "^8.42.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "typescript": "^5.1.3"
+  }
+}
