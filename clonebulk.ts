@@ -191,8 +191,8 @@ await async.eachSeries(config.tasks, async (task) => {
   logger.info(`    table:     ${task.table}`);
   logger.info(`    id:        ${task.id}`);
   logger.info(`    where:     ${task.where ? JSON.stringify(task.where) : ''}`);
-  logger.info(`    orderBy:   ${task.orderBy ? task.orderBy : ''}`);
-  logger.info(`    limit:     ${task.limit ? task.limit : 'none'}`);
+  logger.info(`    orderBy:   ${task.orderBy || ''}`);
+  logger.info(`    limit:     ${task.limit || 'none'}`);
   logger.info(`    skipCount: ${task.skipCount || false}`);
   logger.info('-----------------------------------');
 
@@ -238,20 +238,24 @@ await async.eachSeries(config.tasks, async (task) => {
 
       const index = IDsToPull.indexOf(remoteID) + 1;
 
-      let eta = moment(startTime).add(moment().diff(startTime, 'seconds') / (index / IDsToPull.length), 'seconds');
+      const eta = moment(startTime).add(moment().diff(startTime, 'seconds') / (index / IDsToPull.length), 'seconds');
 
-      process.stdout.write(
-        `\r\x1b[32minfo:     \x1b[37mFetching ${index.toString().padStart(IDsToPull.length.toString().length)}/${IDsToPull.length} - ${Math.round(
-          (index / IDsToPull.length) * 100,
-        )
-          .toString()
-          .padStart(
-            3,
-          )}% - ID: ${remoteID.toString().padEnd(Math.min(longestRemoteIDLength, 150))} - ETA: ${eta.toISOString()} = ${moment.duration(eta.diff(moment())).humanize()} - ${Math.round(index / (moment().diff(startTime, 'seconds') + 1))} records/s`.padEnd(
-          screenWidth,
-          ' ',
-        ),
-      );
+      const stringProgress = `\r\x1b[32minfo:     \x1b[37mFetching ${index.toString().padStart(IDsToPull.length.toString().length)}/${IDsToPull.length} - ${Math.round(
+        (index / IDsToPull.length) * 100,
+      )
+        .toString()
+        .padStart(3)}%`;
+
+      const stringETA = `- ETA: ${eta.toISOString()} = ${moment.duration(eta.diff(moment())).humanize()} - ${Math.round(index / (moment().diff(startTime, 'seconds') + 1))} records/s`;
+
+      const spaceForID = screenWidth - stringProgress.length - stringETA.length + 11; // the +11 is because the control characters at start of stringETA are counted in JS string but now shown on screen
+
+      let stringID = ` - ID: ${remoteID}`.toString().padEnd(Math.min(longestRemoteIDLength, spaceForID));
+      if (stringID.length > spaceForID) {
+        stringID = stringID.slice(0, spaceForID - 1) + '…';
+      }
+
+      process.stdout.write(`${stringProgress}${stringID}${stringETA}`);
 
       // Copy row down
       const row = (

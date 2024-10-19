@@ -10,6 +10,15 @@ export const config: TypeConfig = {
   tasks: [
     /* cspell: disable */
     {
+      name: 'Last Ten Thousand Waivers from allinadventuresraleigh',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['allinadventuresraleigh'] },
+      limit: 10000,
+    },
+
+    {
       name: 'Most recent guests (all apps)',
       table: 'guest',
       id: 'id',
@@ -24,14 +33,14 @@ export const config: TypeConfig = {
       limit: 10000,
     },
 
-    // {
-    //   name: 'Last Thousand Waivers from allinadventuresbowie',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['allinadventuresbowie'] },
-    //   limit: 1000,
-    // },
+    {
+      name: 'Last Ten Thousand Waivers from wherewolfadventures',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['wherewolfadventures'] },
+      limit: 10000,
+    },
   ],
   /* cspell: enable */
 };
