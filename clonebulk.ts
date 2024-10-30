@@ -255,7 +255,9 @@ await async.eachSeries(config.tasks, async (task) => {
         stringID = stringID.slice(0, spaceForID - 1) + '…';
       }
 
-      process.stdout.write(`${stringProgress}${stringID}${stringETA}`);
+      const output = `${stringProgress}${stringID}${stringETA}`;
+
+      process.stdout.write(output.padEnd(screenWidth - output.length));
 
       // Copy row down
       const row = (

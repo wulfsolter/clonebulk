@@ -9,14 +9,44 @@ export const config: TypeConfig = {
   // The tasks themselves
   tasks: [
     /* cspell: disable */
-    {
-      name: 'Last Ten Thousand Waivers from allinadventuresraleigh',
-      table: 'guest',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['allinadventuresraleigh'] },
-      limit: 10000,
-    },
+
+    // {
+    //   name: 'Charge',
+    //   table: 'charge',
+    //   id: 'id',
+    //   limit: 1000000,
+    // },
+
+    // {
+    //   name: 'All Staff',
+    //   table: 'staff',
+    //   id: 'id',
+    //   limit: 100000,
+    // },
+
+    // {
+    //   name: 'All AuditBizOp',
+    //   table: 'audit_bizop',
+    //   id: 'id',
+    //   limit: 100000,
+    // },
+
+    // {
+    //   name: 'Last 50,000 AuditApp',
+    //   table: 'audit_app',
+    //   id: 'id',
+    //   orderBy: ['createdAt', 'DESC'],
+    //   limit: 50000,
+    // },
+
+    // {
+    //   name: 'Last One Hundred Thousand Waivers from allinadventuresraleigh',
+    //   table: 'guest',
+    //   id: 'id',
+    //   orderBy: ['createdAt', 'DESC'],
+    //   where: { query: 'pool = ?', params: ['allinadventuresraleigh'] },
+    //   limit: 100000,
+    // },
 
     {
       name: 'Most recent guests (all apps)',
@@ -26,21 +56,21 @@ export const config: TypeConfig = {
       skipCount: true,
     },
 
-    {
-      name: 'Graphs',
-      table: 'graph',
-      id: 'pool',
-      limit: 10000,
-    },
+    // {
+    //   name: 'Graphs',
+    //   table: 'graph',
+    //   id: 'pool',
+    //   limit: 10000,
+    // },
 
-    {
-      name: 'Last Ten Thousand Waivers from wherewolfadventures',
-      table: 'guest',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['wherewolfadventures'] },
-      limit: 10000,
-    },
+    // {
+    //   name: 'Last Twenty Thousand Waivers from wherewolfadventures',
+    //   table: 'guest',
+    //   id: 'id',
+    //   orderBy: ['createdAt', 'DESC'],
+    //   where: { query: 'pool = ?', params: ['wherewolfadventures'] },
+    //   limit: 20000,
+    // },
   ],
   /* cspell: enable */
 };
