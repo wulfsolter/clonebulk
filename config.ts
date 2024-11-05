@@ -39,14 +39,14 @@ export const config: TypeConfig = {
     //   limit: 50000,
     // },
 
-    // {
-    //   name: 'Last One Hundred Thousand Waivers from allinadventuresraleigh',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['allinadventuresraleigh'] },
-    //   limit: 100000,
-    // },
+    {
+      name: 'Last TenThousand Waivers from allinadventuresraleigh',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['allinadventuresraleigh'] },
+      limit: 10000,
+    },
 
     {
       name: 'Most recent guests (all apps)',
