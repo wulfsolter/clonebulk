@@ -25,7 +25,7 @@
   "devDependencies": {
     "@types/async": "^3.2.24",
     "@types/lodash": "^4.17.13",
-    "@types/node": "^20.16.10",
+    "@types/node": "^22.10.2",
     "@types/pg": "^8.11.10",
     "@types/window-size": "^1.1.4",
     "eslint": "^8.57.1",
