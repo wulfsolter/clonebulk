@@ -33,6 +33,10 @@ const logger = winston.createLogger({
 
 let alreadyCleaningUp = false;
 const cleanup = async () => {
+  logger.info(
+    '---------------------------------------------------------------------------------------------------------',
+  );
+
   // Guard against running cleanup twice
   if (alreadyCleaningUp) {
     logger.info('    already cleaning up');
@@ -174,7 +178,7 @@ if (_.isEmpty(config.tasks)) {
   await cleanup();
 }
 
-await async.eachSeries(config.tasks, async (task) => {
+await async.eachOfSeries(config.tasks, async (task, idx) => {
   const clientTaskLocal = await poolLocal.connect();
   const clientTaskRemote = await poolRemote.connect();
 
@@ -185,22 +189,26 @@ await async.eachSeries(config.tasks, async (task) => {
     firstTask = false;
   }
 
-  logger.info('\n');
-  logger.info('-----------------------------------');
-  logger.info(`Task - ${task.name}`);
-  logger.info(`    table:     ${task.table}`);
-  logger.info(`    id:        ${task.id}`);
-  logger.info(`    where:     ${task.where ? JSON.stringify(task.where) : ''}`);
-  logger.info(`    orderBy:   ${task.orderBy || ''}`);
-  logger.info(`    limit:     ${task.limit || 'none'}`);
-  logger.info(`    skipCount: ${task.skipCount || false}`);
-  logger.info('-----------------------------------');
+  logger.info(' ');
+  logger.info(
+    '---------------------------------------------------------------------------------------------------------',
+  );
+  logger.info(
+    `Task - ${(parseInt(idx.toString(), 10) + 1).toString().padStart(config.tasks.length.toString().length, '0')}/${config.tasks.length.toString()} - ${task.name}`,
+  );
+  logger.info(`          table:     ${task.table}`);
+  logger.info(`          id:        ${task.id}`);
+  logger.info(`          where:     ${task.where ? JSON.stringify(task.where) : ''}`);
+  logger.info(`          orderBy:   ${task.orderBy || ''}`);
+  logger.info(`          limit:     ${task.limit || 'none'}`);
+  logger.info(`          skipCount: ${task.skipCount || false}`);
+  logger.info('    -----------------------------------');
 
   if (!task.skipCount) {
     // Guard against doing a huge query - if more than 50,000 or task.limit rows, exit
     const queryCount = countQueryBuilder(task);
     logger.info('    Counting rows on remote to check for unexpected large result set.');
-    logger.info(`        Query: ${queryCount}`);
+    logger.info(`          Query: ${queryCount}`);
 
     const countRemote = parseInt((await clientTaskRemote.query(queryCount)).rows[0].count, 10);
     if (!task.limit && countRemote > Math.max(50000, _.get(task, 'limit', 0))) {
@@ -210,25 +218,25 @@ await async.eachSeries(config.tasks, async (task) => {
       process.exit();
     }
     logger.info(
-      `        Found ${countRemote} rows on remote ${task.limit ? ` - only fetching ${Math.min(task.limit, countRemote)} as per task.limit` : ''}`,
+      `          Found ${countRemote} rows on remote ${task.limit ? ` - only fetching ${Math.min(task.limit, countRemote)} as per task.limit` : ''}`,
     );
-    logger.info('-----------------------------------');
+    logger.info('    -----------------------------------');
   }
 
   // Build query to get IDs to pull, and run against local + remote
   const querySelectID = selectQueryBuilder(task);
   logger.info(`    Fetching IDs to pull from local + remote`);
-  logger.info(`        Query:     ${querySelectID}`);
+  logger.info(`          Query:     ${querySelectID}`);
   const IDsLocal = (await clientTaskLocal.query((await querySelectID).toString())).rows.map((row) => row[task.id]);
-  logger.info(`        IDsLocal:  ${IDsLocal.length}`);
+  logger.info(`          IDsLocal:  ${IDsLocal.length}`);
 
   const IDsRemote = (await clientTaskRemote.query((await querySelectID).toString())).rows.map((row) => row[task.id]);
-  logger.info(`        IDsRemote: ${IDsRemote.length}`);
+  logger.info(`          IDsRemote: ${IDsRemote.length}`);
   const IDsToPull = _.difference(IDsRemote, IDsLocal);
-  logger.info(`        IDsToPull: ${IDsToPull.length}`);
+  logger.info(`          IDsToPull: ${IDsToPull.length}`);
 
   if (IDsToPull.length) {
-    logger.info('-----------------------------------');
+    logger.info('    -----------------------------------');
 
     const longestRemoteIDLength = _.max(IDsRemote.map((id) => id.toString().length));
     const startTime = moment();
@@ -257,7 +265,7 @@ await async.eachSeries(config.tasks, async (task) => {
 
       const output = `${stringProgress}${stringID}${stringETA}`;
 
-      process.stdout.write(output.padEnd(screenWidth - output.length));
+      process.stdout.write(output.padEnd(screenWidth - output.length, ' '));
 
       // Copy row down
       const row = (
@@ -285,12 +293,11 @@ await async.eachSeries(config.tasks, async (task) => {
       clientRemote.release();
       clientLocal.release();
     });
+    process.stdout.write('\n');
   }
 
   clientTaskRemote.release();
   clientTaskLocal.release();
-  process.stdout.write('\n');
-  logger.info('-----------------------------------');
 });
 
 logger.info('\n');

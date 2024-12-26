@@ -9,6 +9,128 @@ export const config: TypeConfig = {
   // The tasks themselves
   tasks: [
     /* cspell: disable */
+    {
+      name: 'Graphs',
+      table: 'graph',
+      id: 'pool',
+      limit: 10000,
+    },
+
+    {
+      name: 'Last Five Thousand Waivers from 3yatkv',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['3yatkv'] },
+      limit: 5000,
+    },
+
+    {
+      name: 'Last Five Thousand Waivers from vnccnq',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['vnccnq'] },
+      limit: 5000,
+    },
+    {
+      name: 'Last Five Thousand Waivers from pqqaxy',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['pqqaxy'] },
+      limit: 5000,
+    },
+
+    {
+      name: 'Last Five Thousand Waivers from queenstownbiketours',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['queenstownbiketours'] },
+      limit: 5000,
+    },
+
+    {
+      name: 'Last Five Thousand Waivers from kaitunacascades',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['kaitunacascades'] },
+      limit: 5000,
+    },
+
+    {
+      name: 'Last Five Thousand Waivers from wherewolfadventures',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['wherewolfadventures'] },
+      limit: 5000,
+    },
+
+    {
+      name: 'Last Five Thousand Waivers from pacwhale',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['pacwhale'] },
+      limit: 5000,
+    },
+
+    {
+      name: 'Last Five Thousand Waivers from y9h8h3',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['y9h8h3'] },
+      limit: 5000,
+    },
+
+    {
+      name: 'Last Ten Thousand Waivers from y9h8h3',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['y9h8h3'] },
+      limit: 10000,
+    },
+
+    {
+      name: 'Last ThrityThousand Waivers from y9h8h3',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['y9h8h3'] },
+      limit: 30000,
+    },
+
+    {
+      name: 'Last ThrityThousand Waivers from 2kev6h',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['2kev6h'] },
+      limit: 30000,
+    },
+
+    {
+      name: 'Last ThrityThousand Waivers from qazxh4',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['qazxh4'] },
+      limit: 30000,
+    },
+
+    {
+      name: 'Bookings from pacwhale',
+      table: 'tracked_booking',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['pacwhale'] },
+      limit: 30000,
+    },
 
     // {
     //   name: 'Charge',
@@ -40,15 +162,6 @@ export const config: TypeConfig = {
     // },
 
     {
-      name: 'Last TenThousand Waivers from allinadventuresraleigh',
-      table: 'guest',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['allinadventuresraleigh'] },
-      limit: 10000,
-    },
-
-    {
       name: 'Most recent guests (all apps)',
       table: 'guest',
       id: 'id',
@@ -57,10 +170,12 @@ export const config: TypeConfig = {
     },
 
     // {
-    //   name: 'Graphs',
-    //   table: 'graph',
-    //   id: 'pool',
-    //   limit: 10000,
+    //   name: 'All Waivers from z98vuu',
+    //   table: 'guest',
+    //   id: 'id',
+    //   orderBy: ['createdAt', 'DESC'],
+    //   where: { query: 'pool = ?', params: ['z98vuu'] },
+    //   limit: 40000,
     // },
 
     // {
