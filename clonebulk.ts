@@ -194,7 +194,7 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
     '---------------------------------------------------------------------------------------------------------',
   );
   logger.info(
-    `Task - ${(parseInt(idx.toString(), 10) + 1).toString().padStart(config.tasks.length.toString().length, '0')}/${config.tasks.length.toString()} - ${task.name}`,
+    `Task ${(parseInt(idx.toString(), 10) + 1).toString().padStart(config.tasks.length.toString().length, '0')}/${config.tasks.length.toString()} - ${task.name}`,
   );
   logger.info(`          table:     ${task.table}`);
   logger.info(`          id:        ${task.id}`);
