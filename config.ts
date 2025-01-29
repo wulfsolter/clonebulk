@@ -11,12 +11,11 @@ export const config: TypeConfig = {
     /* cspell: disable */
 
     {
-      name: 'Last Five Thousand Waivers from x4fwnn',
-      table: 'guest',
+      name: 'AuditBizOp',
+      table: 'audit_bizop',
       id: 'id',
       orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['x4fwnn'] },
-      limit: 5000,
+      limit: 10000,
     },
 
     {
@@ -26,6 +25,27 @@ export const config: TypeConfig = {
       orderBy: ['updatedAt', 'DESC'],
       limit: 10000,
     },
+
+    {
+      name: '50 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          'id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool ORDER BY g."createdAt" DESC LIMIT 50) g ORDER BY a.pool DESC)',
+      },
+      skipCount: true,
+    },
+
+    // {
+    //   name: 'All Waivers from mysteryroomalbany',
+    //   table: 'guest',
+    //   id: 'id',
+    //   orderBy: ['createdAt', 'DESC'],
+    //   where: { query: 'pool = ?', params: ['mysteryroomalbany'] },
+    //   limit: 50000,
+    // },
 
     {
       name: 'Last Five Thousand Waivers from pacwhale',
