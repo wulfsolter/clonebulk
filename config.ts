@@ -10,13 +10,13 @@ export const config: TypeConfig = {
   tasks: [
     /* cspell: disable */
 
-    {
-      name: 'AuditBizOp',
-      table: 'audit_bizop',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      limit: 10000,
-    },
+    // {
+    //   name: 'AuditBizOp',
+    //   table: 'audit_bizop',
+    //   id: 'id',
+    //   orderBy: ['createdAt', 'DESC'],
+    //   limit: 100000,
+    // },
 
     {
       name: 'Graphs',
@@ -27,13 +27,13 @@ export const config: TypeConfig = {
     },
 
     {
-      name: '50 most recent guests per app',
+      name: '100 most recent guests per app',
       table: 'guest',
       id: 'id',
       where: {
         query:
           // heavily inspired from https://stackoverflow.com/a/25965393/1265447
-          'id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool ORDER BY g."createdAt" DESC LIMIT 50) g ORDER BY a.pool DESC)',
+          'id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool ORDER BY g."createdAt" DESC LIMIT 100) g ORDER BY a.pool DESC)',
       },
       skipCount: true,
     },
