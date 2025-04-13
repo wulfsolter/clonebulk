@@ -27,13 +27,13 @@ export const config: TypeConfig = {
     },
 
     {
-      name: '100 most recent guests per app',
+      name: '200 most recent guests per app',
       table: 'guest',
       id: 'id',
       where: {
         query:
           // heavily inspired from https://stackoverflow.com/a/25965393/1265447
-          'id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool ORDER BY g."createdAt" DESC LIMIT 100) g ORDER BY a.pool DESC)',
+          'id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool ORDER BY g."createdAt" DESC LIMIT 200) g ORDER BY a.pool DESC)',
       },
       skipCount: true,
     },
@@ -74,13 +74,13 @@ export const config: TypeConfig = {
       limit: 50000,
     },
 
-    {
-      name: 'Most recent guests (all apps)',
-      table: 'guest',
-      id: 'id',
-      where: { query: 'id IN (SELECT DISTINCT ON (pool) id FROM guest ORDER BY pool, "createdAt" desc)' }, // https://stackoverflow.com/a/34715134
-      skipCount: true,
-    },
+    // {
+    //   name: 'Most recent guests (all apps)',
+    //   table: 'guest',
+    //   id: 'id',
+    //   where: { query: 'id IN (SELECT DISTINCT ON (pool) id FROM guest ORDER BY pool, "createdAt" desc)' }, // https://stackoverflow.com/a/34715134
+    //   skipCount: true,
+    // },
 
     {
       name: 'Last Five Thousand Waivers from vnccnq',
