@@ -196,12 +196,15 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
   logger.info(
     `Task ${(parseInt(idx.toString(), 10) + 1).toString().padStart(config.tasks.length.toString().length, '0')}/${config.tasks.length.toString()} - ${task.name}`,
   );
+  logger.info('    -----------------------------------');
+  logger.info('    Overview');
   logger.info(`          table:     ${task.table}`);
   logger.info(`          id:        ${task.id}`);
-  logger.info(`          where:     ${task.where ? JSON.stringify(task.where) : ''}`);
+  logger.info(`          where:     ${task.where ? JSON.stringify(task.where) : '<ALL>'}`);
   logger.info(`          orderBy:   ${task.orderBy || ''}`);
   logger.info(`          limit:     ${task.limit || 'none'}`);
   logger.info(`          skipCount: ${task.skipCount || false}`);
+  logger.info(`          truncate:  ${task.truncate || false}`);
   logger.info('    -----------------------------------');
 
   if (!task.skipCount) {
@@ -218,8 +221,14 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
       process.exit();
     }
     logger.info(
-      `          Found ${countRemote} rows on remote ${task.limit ? ` - only fetching ${Math.min(task.limit, countRemote)} as per task.limit` : ''}`,
+      `          Found ${countRemote} rows on remote ${task.limit ? ` - only fetching up to ${Math.min(task.limit, countRemote)} as per task.limit` : ''}`,
     );
+    logger.info('    -----------------------------------');
+  }
+
+  if (task.truncate) {
+    logger.info('    Truncating table on local');
+    await clientTaskLocal.query(`TRUNCATE TABLE "${task.table}" CASCADE`);
     logger.info('    -----------------------------------');
   }
 
@@ -241,57 +250,63 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
     const longestRemoteIDLength = _.max(IDsRemote.map((id) => id.toString().length));
     const startTime = moment();
     await async.eachOfLimit(IDsToPull, config.parallelism, async (remoteID) => {
-      const clientLocal = await poolLocal.connect();
-      const clientRemote = await poolRemote.connect();
+      try {
+        const clientLocal = await poolLocal.connect();
+        const clientRemote = await poolRemote.connect();
 
-      const index = IDsToPull.indexOf(remoteID) + 1;
+        const index = IDsToPull.indexOf(remoteID) + 1;
 
-      const eta = moment(startTime).add(moment().diff(startTime, 'seconds') / (index / IDsToPull.length), 'seconds');
+        const eta = moment(startTime).add(moment().diff(startTime, 'seconds') / (index / IDsToPull.length), 'seconds');
 
-      const stringProgress = `\r\x1b[32minfo:     \x1b[37mFetching ${index.toString().padStart(IDsToPull.length.toString().length)}/${IDsToPull.length} - ${Math.round(
-        (index / IDsToPull.length) * 100,
-      )
-        .toString()
-        .padStart(3)}%`;
+        const stringProgress = `\r\x1b[32minfo:     \x1b[37mFetching ${index.toString().padStart(IDsToPull.length.toString().length)}/${IDsToPull.length} - ${Math.round(
+          (index / IDsToPull.length) * 100,
+        )
+          .toString()
+          .padStart(3)}%`;
 
-      const stringETA = `- ETA: ${eta.toISOString()} = ${moment.duration(eta.diff(moment())).humanize()} - ${Math.round(index / (moment().diff(startTime, 'seconds') + 1))} records/s`;
+        const stringETA = `- ETA: ${eta.toISOString()} = ${moment.duration(eta.diff(moment())).humanize()} - ${Math.round(index / (moment().diff(startTime, 'seconds') + 1))} records/s`;
 
-      const spaceForID = screenWidth - stringProgress.length - stringETA.length + 11; // the +11 is because the control characters at start of stringETA are counted in JS string but now shown on screen
+        const spaceForID = screenWidth - stringProgress.length - stringETA.length + 11; // the +11 is because the control characters at start of stringETA are counted in JS string but now shown on screen
 
-      let stringID = ` - ID: ${remoteID}`.toString().padEnd(Math.min(longestRemoteIDLength, spaceForID));
-      if (stringID.length > spaceForID) {
-        stringID = stringID.slice(0, spaceForID - 1) + '…';
+        let stringID = ` - ID: ${remoteID}`.toString().padEnd(Math.min(longestRemoteIDLength, spaceForID));
+        if (stringID.length > spaceForID) {
+          stringID = stringID.slice(0, spaceForID - 1) + '…';
+        }
+
+        const output = `${stringProgress}${stringID}${stringETA}`;
+
+        process.stdout.write(output.padEnd(screenWidth - output.length, ' '));
+
+        // Copy row down
+        const row = (
+          await clientRemote.query({
+            text: `SELECT * FROM "${task.table}" WHERE ${task.id} = $1`,
+            values: [remoteID],
+          })
+        ).rows[0];
+
+        if (!row) {
+          logger.error(` - ${remoteID} not found on remote`);
+          process.exit();
+        }
+
+        await clientLocal.query({
+          text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')}) ON CONFLICT (${task.id}) DO NOTHING`,
+          values: Object.values(row).map((el) => {
+            if (_.isArray(el)) {
+              return JSON.stringify(el);
+            }
+            return el;
+          }),
+        });
+
+        clientRemote.release();
+        clientLocal.release();
+      } catch (error: any) {
+        logger.error(` - ${remoteID} failed to copy down`, { error });
+        console.log(error);
+        // process.exit();
       }
-
-      const output = `${stringProgress}${stringID}${stringETA}`;
-
-      process.stdout.write(output.padEnd(screenWidth - output.length, ' '));
-
-      // Copy row down
-      const row = (
-        await clientRemote.query({
-          text: `SELECT * FROM "${task.table}" WHERE ${task.id} = $1`,
-          values: [remoteID],
-        })
-      ).rows[0];
-
-      if (!row) {
-        logger.error(` - ${remoteID} not found on remote`);
-        process.exit();
-      }
-
-      await clientLocal.query({
-        text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')}) ON CONFLICT (${task.id}) DO NOTHING`,
-        values: Object.values(row).map((el) => {
-          if (_.isArray(el)) {
-            return JSON.stringify(el);
-          }
-          return el;
-        }),
-      });
-
-      clientRemote.release();
-      clientLocal.release();
     });
     process.stdout.write('\n');
   }

@@ -24,19 +24,84 @@ export const config: TypeConfig = {
       id: 'pool',
       orderBy: ['updatedAt', 'DESC'],
       limit: 10000,
+      truncate: true,
     },
 
     {
-      name: '200 most recent guests per app',
+      name: '50 most recent guests per app',
       table: 'guest',
       id: 'id',
       where: {
         query:
           // heavily inspired from https://stackoverflow.com/a/25965393/1265447
-          'id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool ORDER BY g."createdAt" DESC LIMIT 200) g ORDER BY a.pool DESC)',
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 50) g ORDER BY a.pool DESC)`,
       },
       skipCount: true,
     },
+
+    {
+      name: '500 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 500) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+    },
+
+    {
+      name: 'All Waivers from treetoptrekkingabraskamontsaintgregoire',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['treetoptrekkingabraskamontsaintgregoire'] },
+      limit: 400000,
+    },
+
+    // 4385: ['awqs82', 'bjazua', 'gd3kvu', 'rgs9a3', 'tw26f3'], // https://wherewolf.zendesk.com/agent/tickets/41065
+    {
+      name: 'All Waivers from awqs82',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['awqs82'] },
+      limit: 100000,
+    },
+    {
+      name: 'All Waivers from bjazua',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['bjazua'] },
+      limit: 100000,
+    },
+    {
+      name: 'All Waivers from gd3kvu',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['gd3kvu'] },
+      limit: 100000,
+    },
+    {
+      name: 'All Waivers from rgs9a3',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['rgs9a3'] },
+      limit: 100000,
+    },
+    {
+      name: 'All Waivers from tw26f3',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['tw26f3'] },
+      limit: 100000,
+    },
+    // 4385: ['awqs82', 'bjazua', 'gd3kvu', 'rgs9a3', 'tw26f3'], // https://wherewolf.zendesk.com/agent/tickets/41065
 
     // {
     //   name: 'All Waivers from mysteryroomalbany',
@@ -46,15 +111,6 @@ export const config: TypeConfig = {
     //   where: { query: 'pool = ?', params: ['mysteryroomalbany'] },
     //   limit: 50000,
     // },
-
-    {
-      name: 'Last Five Thousand Waivers from pacwhale',
-      table: 'guest',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['pacwhale'] },
-      limit: 5000,
-    },
 
     {
       name: 'Bookings from pacwhale',
@@ -244,6 +300,7 @@ export type TypeTask = {
   orderBy?: string[];
   limit?: number;
   skipCount?: boolean;
+  truncate?: boolean;
 };
 
 export type TypeConfig = {
