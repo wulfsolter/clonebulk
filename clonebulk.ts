@@ -14,9 +14,9 @@ import winston from 'winston';
 import { config, TypeTask } from './config'; // load tasks
 
 // @ts-ignore
-import * as connectionStringLocal from '../wherewolf-backend/config/env/development.js'; // import local DB connection string //
+import * as connectionStringLocal from '../wherewolf/wherewolf-backend/config/env/development.js'; // import local DB connection string //
 // @ts-ignore
-import * as connectionStringRemote from '../wherewolf-backend/config/env/production.js'; // import prod DB connection string
+import * as connectionStringRemote from '../wherewolf/wherewolf-backend/config/env/production.js'; // import prod DB connection string
 
 // A few quick helpers
 const screenWidth = windowSize.width;
