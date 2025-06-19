@@ -249,11 +249,10 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
 
     const longestRemoteIDLength = _.max(IDsRemote.map((id) => id.toString().length));
     const startTime = moment();
+    const clientLocal = await poolLocal.connect();
+    const clientRemote = await poolRemote.connect();
     await async.eachOfLimit(IDsToPull, config.parallelism, async (remoteID) => {
       try {
-        const clientLocal = await poolLocal.connect();
-        const clientRemote = await poolRemote.connect();
-
         const index = IDsToPull.indexOf(remoteID) + 1;
 
         const eta = moment(startTime).add(moment().diff(startTime, 'seconds') / (index / IDsToPull.length), 'seconds');
@@ -273,9 +272,7 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
           stringID = stringID.slice(0, spaceForID - 1) + '…';
         }
 
-        const output = `${stringProgress}${stringID}${stringETA}`;
-
-        process.stdout.write(output.padEnd(screenWidth - output.length, ' '));
+        process.stdout.write(`${stringProgress}${stringID}${stringETA}`.padEnd(screenWidth, ' '));
 
         // Copy row down
         const row = (
@@ -299,15 +296,14 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
             return el;
           }),
         });
-
-        clientRemote.release();
-        clientLocal.release();
       } catch (error: any) {
         logger.error(` - ${remoteID} failed to copy down`, { error });
         console.log(error);
         // process.exit();
       }
     });
+    clientRemote.release();
+    clientLocal.release();
     process.stdout.write('\n');
   }
 
