@@ -71,8 +71,8 @@ const cleanup = async () => {
   } else {
     logger.info('    shutting down tunnel to remote');
     logger.info('TODO SHUT DOWN THE TUNNEL');
-    // const { stdout: tunnelDownOutput, stderr: tunnelDownError } = await exec('ssh -T -O "exit" clonerow-tunnel');
-    // logger.info(tunnelDownOutput, tunnelDownError);
+    const { stdout: tunnelDownOutput, stderr: tunnelDownError } = await exec('ssh -T -O "exit" clonerow-tunnel');
+    logger.info(tunnelDownOutput, tunnelDownError);
   }
 
   process.exit(0);
@@ -251,44 +251,24 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
     const startTime = moment();
     const clientLocal = await poolLocal.connect();
     const clientRemote = await poolRemote.connect();
-    await async.eachOfLimit(IDsToPull, config.parallelism, async (remoteID) => {
-      try {
-        const index = IDsToPull.indexOf(remoteID) + 1;
 
-        const eta = moment(startTime).add(moment().diff(startTime, 'seconds') / (index / IDsToPull.length), 'seconds');
+    if (task.fetchAllAtOnce) {
+      // Copy all rows down in one go, then insert individually
+      const selectQuery = `SELECT * FROM "${task.table}" WHERE ${task.id} = ANY($1)`;
+      logger.info(`          fetchAllAtOnce! - Fetching all ${IDsToPull.length} rows - query: ${selectQuery}`);
 
-        const stringProgress = `\r\x1b[32minfo:     \x1b[37mFetching ${index.toString().padStart(IDsToPull.length.toString().length)}/${IDsToPull.length} - ${Math.round(
-          (index / IDsToPull.length) * 100,
-        )
-          .toString()
-          .padStart(3)}%`;
+      const rows = (
+        await clientRemote.query({
+          text: selectQuery,
+          values: [IDsToPull],
+        })
+      ).rows;
 
-        const stringETA = `- ETA: ${eta.toISOString()} = ${moment.duration(eta.diff(moment())).humanize()} - ${Math.round(index / (moment().diff(startTime, 'seconds') + 1))} records/s`;
+      logger.info(`          fetchAllAtOnce! - Inserting all ${rows.length} rows`);
 
-        const spaceForID = screenWidth - stringProgress.length - stringETA.length + 11; // the +11 is because the control characters at start of stringETA are counted in JS string but now shown on screen
-
-        let stringID = ` - ID: ${remoteID}`.toString().padEnd(Math.min(longestRemoteIDLength, spaceForID));
-        if (stringID.length > spaceForID) {
-          stringID = stringID.slice(0, spaceForID - 1) + '…';
-        }
-
-        process.stdout.write(`${stringProgress}${stringID}${stringETA}`.padEnd(screenWidth, ' '));
-
-        // Copy row down
-        const row = (
-          await clientRemote.query({
-            text: `SELECT * FROM "${task.table}" WHERE ${task.id} = $1`,
-            values: [remoteID],
-          })
-        ).rows[0];
-
-        if (!row) {
-          logger.error(` - ${remoteID} not found on remote`);
-          process.exit();
-        }
-
+      await async.eachOfLimit(rows, config.parallelism, async (row) => {
         await clientLocal.query({
-          text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')}) ON CONFLICT (${task.id}) DO NOTHING`,
+          text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')})${task.skipConflict ? '' : ` ON CONFLICT (${task.id}) DO NOTHING`}`,
           values: Object.values(row).map((el) => {
             if (_.isArray(el)) {
               return JSON.stringify(el);
@@ -296,12 +276,65 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
             return el;
           }),
         });
-      } catch (error: any) {
-        logger.error(` - ${remoteID} failed to copy down`, { error });
-        console.log(error);
-        // process.exit();
-      }
-    });
+      });
+    } else {
+      // one row at a time
+      await async.eachOfLimit(IDsToPull, config.parallelism, async (remoteID) => {
+        try {
+          const index = IDsToPull.indexOf(remoteID) + 1;
+
+          const eta = moment(startTime).add(
+            moment().diff(startTime, 'seconds') / (index / IDsToPull.length),
+            'seconds',
+          );
+
+          const stringProgress = `\r\x1b[32minfo:     \x1b[37mFetching ${index.toString().padStart(IDsToPull.length.toString().length)}/${IDsToPull.length} - ${Math.round(
+            (index / IDsToPull.length) * 100,
+          )
+            .toString()
+            .padStart(3)}%`;
+
+          const stringETA = `- ETA: ${eta.toISOString()} = ${moment.duration(eta.diff(moment())).humanize()} - ${Math.round(index / (moment().diff(startTime, 'seconds') + 1))} records/s`;
+
+          const spaceForID = screenWidth - stringProgress.length - stringETA.length + 11; // the +11 is because the control characters at start of stringETA are counted in JS string but now shown on screen
+
+          let stringID = ` - ${task.id}: ${remoteID}`.toString().padEnd(Math.min(longestRemoteIDLength, spaceForID));
+          if (stringID.length > spaceForID) {
+            stringID = stringID.slice(0, spaceForID - 1) + '…';
+          }
+
+          process.stdout.write(`${stringProgress}${stringID}${stringETA}`.padEnd(screenWidth, ' '));
+
+          // Copy row down
+          const row = (
+            await clientRemote.query({
+              text: `SELECT * FROM "${task.table}" WHERE ${task.id} = $1`,
+              values: [remoteID],
+            })
+          ).rows[0];
+
+          if (!row) {
+            logger.error(` - ${remoteID} not found on remote`);
+            process.exit();
+          }
+
+          await clientLocal.query({
+            text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')})${task.skipConflict ? '' : ` ON CONFLICT (${task.id}) DO NOTHING`}`,
+            values: Object.values(row).map((el) => {
+              if (_.isArray(el)) {
+                return JSON.stringify(el);
+              }
+              return el;
+            }),
+          });
+        } catch (error: any) {
+          logger.error(` - ${remoteID} failed to copy down`, { error });
+          console.log(error);
+          // process.exit();
+        }
+      });
+    }
+
     clientRemote.release();
     clientLocal.release();
     process.stdout.write('\n');
