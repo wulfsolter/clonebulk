@@ -255,6 +255,7 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
     if (task.fetchAllAtOnce) {
       // Copy all rows down in one go, then insert individually
       const selectQuery = `SELECT * FROM "${task.table}" WHERE ${task.id} = ANY($1)`;
+      const fetchingStart = moment();
       logger.info(`          fetchAllAtOnce! - Fetching all ${IDsToPull.length} rows - query: ${selectQuery}`);
 
       const rows = (
@@ -264,8 +265,12 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
         })
       ).rows;
 
-      logger.info(`          fetchAllAtOnce! - Inserting all ${rows.length} rows`);
+      logger.info(
+        `          fetchAllAtOnce! - Fetched all ${rows.length} rows in ${moment.duration(moment().diff(fetchingStart)).humanize()}`,
+      );
 
+      logger.info(`          fetchAllAtOnce! - Inserting all ${rows.length} rows`);
+      const insertingStart = moment();
       await async.eachOfLimit(rows, config.parallelism, async (row) => {
         await clientLocal.query({
           text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')})${task.skipConflict ? '' : ` ON CONFLICT (${task.id}) DO NOTHING`}`,
@@ -277,6 +282,9 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
           }),
         });
       });
+      logger.info(
+        `          fetchAllAtOnce! - Inserted all ${rows.length} rows in ${moment.duration(moment().diff(insertingStart)).humanize()}`,
+      );
     } else {
       // one row at a time
       await async.eachOfLimit(IDsToPull, config.parallelism, async (remoteID) => {
