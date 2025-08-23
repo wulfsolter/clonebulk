@@ -71,8 +71,14 @@ const cleanup = async () => {
   } else {
     logger.info('    shutting down tunnel to remote');
     logger.info('TODO SHUT DOWN THE TUNNEL');
-    const { stdout: tunnelDownOutput, stderr: tunnelDownError } = await exec('ssh -T -O "exit" clonerow-tunnel');
-    logger.info(tunnelDownOutput, tunnelDownError);
+    try {
+      const { stdout: tunnelDownOutput, stderr: tunnelDownError } = await exec('ssh -T -O "exit" clonerow-tunnel');
+      logger.info('tunnelDownOutput, tunnelDownError', tunnelDownOutput, tunnelDownError);
+    } catch (error: any) {
+      if (!error.toString().includes('Connection refused')) {
+        logger.error('    error shutting down tunnel', { error });
+      }
+    }
   }
 
   process.exit(0);

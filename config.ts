@@ -20,11 +20,11 @@ export const config: TypeConfig = {
     },
 
     {
-      name: 'All Waivers from swn8kc',
+      name: 'All Waivers from 22wsq6',
       table: 'guest',
       id: 'id',
       orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['swn8kc'] },
+      where: { query: 'pool = ?', params: ['22wsq6'] },
       limit: 100000,
     },
 
