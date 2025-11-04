@@ -174,6 +174,11 @@ const poolRemote = new pg.Pool({
   host: 'localhost',
   port: localPortToRemote,
   max: _.min([config.parallelism, 10]),
+  // https://stackoverflow.com/a/66913689/1265447
+  ssl: {
+    // sslmode: 'require',
+    rejectUnauthorized: false,
+  },
 });
 
 logger.info('after setting up remote');
