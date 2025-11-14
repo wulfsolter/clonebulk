@@ -265,7 +265,7 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
 
     if (task.fetchAllAtOnce) {
       // Copy all rows down in one go, then insert individually
-      const selectQuery = `SELECT * FROM "${task.table}" WHERE ${task.id} = ANY($1)`;
+      const selectQuery = `SELECT * FROM "${task.table}" WHERE ${task.id} = ANY($1) /* source:clonebulk-fetchAllAtOnce task:${task.name.replace(/\W/g, '')} */`;
       const fetchingStart = moment();
       logger.info(`          fetchAllAtOnce! - Fetching all ${IDsToPull.length} rows - query: ${selectQuery}`);
 
@@ -327,7 +327,7 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
           // Copy row down
           const row = (
             await clientRemote.query({
-              text: `SELECT * FROM "${task.table}" WHERE ${task.id} = $1`,
+              text: `SELECT * FROM "${task.table}" WHERE ${task.id} = $1  /* source:clonebulk-individual task:${task.name.replace(/\W/g, '')} */`,
               values: [remoteID],
             })
           ).rows[0];

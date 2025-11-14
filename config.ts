@@ -10,14 +10,43 @@ export const config: TypeConfig = {
   tasks: [
     /* cspell: disable */
 
-    // {
-    //   name: 'Bookings from f5tfsz',
-    //   table: 'tracked_booking',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['f5tfsz'] },
-    //   limit: 5000,
-    // },
+    {
+      name: 'Bookings from gw3yx9',
+      table: 'tracked_booking',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['gw3yx9'] },
+      limit: 10000,
+      fetchAllAtOnce: true,
+    },
+
+    {
+      name: 'Last 10000 Waivers from gw3yx9',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['gw3yx9'] },
+      limit: 10000,
+      fetchAllAtOnce: true,
+    },
+    {
+      name: 'Last 20000 Waivers from gw3yx9',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['gw3yx9'] },
+      limit: 20000,
+      fetchAllAtOnce: true,
+    },
+    {
+      name: 'Last 30000 Waivers from gw3yx9',
+      table: 'guest',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      where: { query: 'pool = ?', params: ['gw3yx9'] },
+      limit: 30000,
+      fetchAllAtOnce: true,
+    },
 
     // {
     //   name: 'Automation History',
@@ -53,15 +82,13 @@ export const config: TypeConfig = {
     //   // fetchAllAtOnce: true,
     // },
 
-    // {
-    //   name: 'Last 5000 Waivers from thehandlebardetroit',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['thehandlebardetroit'] },
-    //   limit: 5000,
-    //   fetchAllAtOnce: true,
-    // },
+    {
+      name: 'BI Time Series Daily',
+      table: 'bi_time_series_daily',
+      id: 'id',
+      truncate: true,
+      fetchAllAtOnce: true,
+    },
 
     {
       name: 'Subscription Deals',
