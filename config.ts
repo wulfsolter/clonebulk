@@ -6,82 +6,11 @@ export const config: TypeConfig = {
   // How many select->inserts to run in parallel
   parallelism: 300,
 
+  copyMostOfApp: 'b4j5kq' /* cspell: disable-line */,
+
   // The tasks themselves
   tasks: [
     /* cspell: disable */
-
-    {
-      name: 'Bookings from gw3yx9',
-      table: 'tracked_booking',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['gw3yx9'] },
-      limit: 10000,
-      fetchAllAtOnce: true,
-    },
-
-    {
-      name: 'Last 10000 Waivers from gw3yx9',
-      table: 'guest',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['gw3yx9'] },
-      limit: 10000,
-      fetchAllAtOnce: true,
-    },
-    {
-      name: 'Last 20000 Waivers from gw3yx9',
-      table: 'guest',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['gw3yx9'] },
-      limit: 20000,
-      fetchAllAtOnce: true,
-    },
-    {
-      name: 'Last 30000 Waivers from gw3yx9',
-      table: 'guest',
-      id: 'id',
-      orderBy: ['createdAt', 'DESC'],
-      where: { query: 'pool = ?', params: ['gw3yx9'] },
-      limit: 30000,
-      fetchAllAtOnce: true,
-    },
-
-    // {
-    //   name: 'Automation History',
-    //   table: 'automation_history',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   limit: 50000,
-    //   fetchAllAtOnce: true,
-    //   // truncate: true,
-    //   skipConflict: true,
-    //   where: { query: 'pool = ?', params: ['6rbhr3'] },
-    // },
-
-    // {
-    //   name: 'Automation Queue',
-    //   table: 'automation_queue',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   limit: 50000,
-    //   fetchAllAtOnce: true,
-    //   // truncate: true,
-    //   skipConflict: true,
-    //   where: { query: 'pool = ?', params: ['6rbhr3'] },
-    // },
-
-    // {
-    //   name: 'BizOps',
-    //   table: 'bizop',
-    //   id: 'id',
-    //   orderBy: ['updatedAt', 'DESC'],
-    //   limit: 10000,
-    //   // truncate: true,
-    //   // fetchAllAtOnce: true,
-    // },
-
     {
       name: 'BI Time Series Daily',
       table: 'bi_time_series_daily',
@@ -99,15 +28,15 @@ export const config: TypeConfig = {
       fetchAllAtOnce: true,
     },
 
-    // {
-    //   name: 'Graphs',
-    //   table: 'graph',
-    //   id: 'pool',
-    //   orderBy: ['updatedAt', 'DESC'],
-    //   limit: 10000,
-    //   truncate: true,
-    //   fetchAllAtOnce: true,
-    // },
+    {
+      name: 'Graphs',
+      table: 'graph',
+      id: 'pool',
+      orderBy: ['updatedAt', 'DESC'],
+      limit: 10000,
+      truncate: true,
+      fetchAllAtOnce: true,
+    },
 
     {
       name: '10 most recent guests per app (fetchAllAtOnce)',
@@ -121,14 +50,6 @@ export const config: TypeConfig = {
       skipCount: true,
       fetchAllAtOnce: true,
     },
-
-    // {
-    //   name: 'Charge',
-    //   table: 'charge',
-    //   id: 'id',
-    //   limit: 1000000,
-    //   // fetchAllAtOnce: true,
-    // },
 
     {
       name: '20 most recent guests per app (fetchAllAtOnce)',
@@ -156,55 +77,73 @@ export const config: TypeConfig = {
       fetchAllAtOnce: true,
     },
 
-    // {
-    //   name: '75 most recent guests per app (fetchAllAtOnce)',
-    //   table: 'guest',
-    //   id: 'id',
-    //   where: {
-    //     query:
-    //       // heavily inspired from https://stackoverflow.com/a/25965393/1265447
-    //       `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 75) g ORDER BY a.pool DESC)`,
-    //   },
-    //   skipCount: true,
-    //   fetchAllAtOnce: true,
-    // },
+    {
+      name: '75 most recent guests per app (fetchAllAtOnce)',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 75) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      fetchAllAtOnce: true,
+    },
+
+    {
+      name: '100 most recent guests per app (fetchAllAtOnce)',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 100) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      fetchAllAtOnce: true,
+    },
+
+    {
+      name: '250 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 250) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      // fetchAllAtOnce: true,
+    },
+
+    {
+      name: '500 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 500) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      // fetchAllAtOnce: true,
+    },
 
     // {
-    //   name: '100 most recent guests per app (fetchAllAtOnce)',
-    //   table: 'guest',
+    //   name: 'BizOps',
+    //   table: 'bizop',
     //   id: 'id',
-    //   where: {
-    //     query:
-    //       // heavily inspired from https://stackoverflow.com/a/25965393/1265447
-    //       `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 100) g ORDER BY a.pool DESC)`,
-    //   },
-    //   skipCount: true,
-    //   fetchAllAtOnce: true,
-    // },
-
-    // {
-    //   name: '250 most recent guests per app',
-    //   table: 'guest',
-    //   id: 'id',
-    //   where: {
-    //     query:
-    //       // heavily inspired from https://stackoverflow.com/a/25965393/1265447
-    //       `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 250) g ORDER BY a.pool DESC)`,
-    //   },
-    //   skipCount: true,
+    //   orderBy: ['updatedAt', 'DESC'],
+    //   limit: 10000,
+    //   // truncate: true,
     //   // fetchAllAtOnce: true,
     // },
 
     // {
-    //   name: '500 most recent guests per app',
-    //   table: 'guest',
+    //   name: 'Charge',
+    //   table: 'charge',
     //   id: 'id',
-    //   where: {
-    //     query:
-    //       // heavily inspired from https://stackoverflow.com/a/25965393/1265447
-    //       `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 500) g ORDER BY a.pool DESC)`,
-    //   },
-    //   skipCount: true,
+    //   limit: 1000000,
     //   // fetchAllAtOnce: true,
     // },
 
@@ -223,34 +162,6 @@ export const config: TypeConfig = {
     //   orderBy: ['createdAt', 'DESC'],
     //   where: { query: 'pool = ?', params: ['gkpet4'] },
     //   limit: 40000,
-    // },
-
-    // {
-    //   name: 'Event Log - 8jjy87',
-    //   table: 'event_log',
-    //   id: 'id',
-    //   where: { query: 'pool = ?', params: ['8jjy87'] },
-    //   orderBy: ['created_at', 'DESC'],
-    //   limit: 300000,
-    //   skipConflict: true,
-    //   fetchAllAtOnce: true,
-    // },
-
-    // {
-    //   name: 'Tracked Bookings',
-    //   table: 'tracked_booking',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   limit: 50000,
-    // },
-
-    // {
-    //   name: 'All Waivers from mysteryroomalbany',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['mysteryroomalbany'] },
-    //   limit: 50000,
     // },
 
     // {
@@ -274,96 +185,8 @@ export const config: TypeConfig = {
     // },
 
     // {
-    //   name: 'Last Five Thousand Waivers from pqqaxy',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['pqqaxy'] },
-    //   limit: 5000,
-    // },
-
-    // {
-    //   name: 'Last Twenty Thousand Waivers from queenstownbiketours',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['queenstownbiketours'] },
-    //   limit: 20000,
-    // },
-
-    // {
-    //   name: 'Last Five Thousand Waivers from 5t82ep',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['5t82ep'] },
-    //   limit: 5000,
-    // },
-
-    // {
-    //   name: 'Last Five Thousand Waivers from wherewolfadventures',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['wherewolfadventures'] },
-    //   limit: 5000,
-    // },
-
-    // {
-    //   name: 'Last Five Thousand Waivers from y9h8h3',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['y9h8h3'] },
-    //   limit: 5000,
-    // },
-
-    // {
-    //   name: 'Last Ten Thousand Waivers from y9h8h3',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['y9h8h3'] },
-    //   limit: 10000,
-    // },
-
-    // {
-    //   name: 'Last ThrityThousand Waivers from y9h8h3',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['y9h8h3'] },
-    //   limit: 30000,
-    // },
-
-    // {
-    //   name: 'Last ThrityThousand Waivers from 2kev6h',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['2kev6h'] },
-    //   limit: 30000,
-    // },
-
-    // {
-    //   name: 'Last ThrityThousand Waivers from qazxh4',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['qazxh4'] },
-    //   limit: 30000,
-    // },
-
-    // {
     //   name: 'All Staff',
     //   table: 'staff',
-    //   id: 'id',
-    //   limit: 100000,
-    // },
-
-    // {
-    //   name: 'All AuditBizOp',
-    //   table: 'audit_bizop',
     //   id: 'id',
     //   limit: 100000,
     // },
@@ -375,25 +198,8 @@ export const config: TypeConfig = {
     //   orderBy: ['createdAt', 'DESC'],
     //   limit: 50000,
     // },
-
-    // {
-    //   name: 'All Waivers from z98vuu',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['z98vuu'] },
-    //   limit: 40000,
-    // },
-
-    // {
-    //   name: 'Last Twenty Thousand Waivers from wherewolfadventures',
-    //   table: 'guest',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   where: { query: 'pool = ?', params: ['wherewolfadventures'] },
-    //   limit: 20000,
-    // },
   ],
+
   /* cspell: enable */
 };
 
@@ -416,6 +222,7 @@ export type TypeTask = {
 };
 
 export type TypeConfig = {
+  copyMostOfApp: string;
   parallelism: number;
   multithreaded: boolean;
   tasks: Array<TypeTask>;

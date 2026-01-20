@@ -12,6 +12,7 @@ import windowSize from 'window-size';
 import winston from 'winston';
 
 import { config, TypeTask } from './config'; // load tasks
+import { constants } from './constants';
 
 // @ts-ignore
 import * as connectionStringLocal from '../wherewolf/wherewolf-backend/config/env/development.js'; // import local DB connection string //
@@ -183,13 +184,20 @@ const poolRemote = new pg.Pool({
 
 logger.info('after setting up remote');
 
+const tasks = [...config.tasks];
+
+if (config.copyMostOfApp) {
+  // to the front of array
+  tasks.unshift(...constants.taskPresets.copyMostOfApp(config.copyMostOfApp));
+}
+
 // Exit if there are no tasks to run
-if (_.isEmpty(config.tasks)) {
+if (_.isEmpty(tasks)) {
   logger.info('No tasks to run');
   await cleanup();
 }
 
-await async.eachOfSeries(config.tasks, async (task, idx) => {
+await async.eachOfSeries(tasks, async (task, idx) => {
   const clientTaskLocal = await poolLocal.connect();
   const clientTaskRemote = await poolRemote.connect();
 
@@ -205,7 +213,7 @@ await async.eachOfSeries(config.tasks, async (task, idx) => {
     '---------------------------------------------------------------------------------------------------------',
   );
   logger.info(
-    `Task ${(parseInt(idx.toString(), 10) + 1).toString().padStart(config.tasks.length.toString().length, '0')}/${config.tasks.length.toString()} - ${task.name}`,
+    `Task ${(parseInt(idx.toString(), 10) + 1).toString().padStart(tasks.length.toString().length, '0')}/${tasks.length.toString()} - ${task.name}`,
   );
   logger.info('    -----------------------------------');
   logger.info('    Overview');
