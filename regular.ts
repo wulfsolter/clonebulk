@@ -1,4 +1,4 @@
-export const constants = {
+export const regular = {
   taskPresets: {
     copyMostOfApp: (pool: string) => [
       {

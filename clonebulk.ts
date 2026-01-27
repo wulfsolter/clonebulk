@@ -12,7 +12,7 @@ import windowSize from 'window-size';
 import winston from 'winston';
 
 import { config, TypeTask } from './config'; // load tasks
-import { constants } from './constants';
+import { regular } from './regular';
 
 // @ts-ignore
 import * as connectionStringLocal from '../wherewolf/wherewolf-backend/config/env/development.js'; // import local DB connection string //
@@ -188,7 +188,7 @@ const tasks = [...config.tasks];
 
 if (config.copyMostOfApp) {
   // to the front of array
-  tasks.unshift(...constants.taskPresets.copyMostOfApp(config.copyMostOfApp));
+  tasks.unshift(...regular.taskPresets.copyMostOfApp(config.copyMostOfApp));
 }
 
 // Exit if there are no tasks to run

@@ -6,7 +6,7 @@ export const config: TypeConfig = {
   // How many select->inserts to run in parallel
   parallelism: 300,
 
-  copyMostOfApp: 'b4j5kq' /* cspell: disable-line */,
+  copyMostOfApp: 'rt299s' /* cspell: disable-line */,
 
   // The tasks themselves
   tasks: [
