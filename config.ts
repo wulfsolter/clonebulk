@@ -6,7 +6,8 @@ export const config: TypeConfig = {
   // How many select->inserts to run in parallel
   parallelism: 300,
 
-  copyMostOfApp: 'rt299s' /* cspell: disable-line */,
+  // copyMostOfApp: 'wherewolfadventures' /* cspell: disable-line */,
+  copyMostOfApp: 'v2xbpr' /* cspell: disable-line */,
 
   // The tasks themselves
   tasks: [
@@ -130,6 +131,14 @@ export const config: TypeConfig = {
     },
 
     // {
+    //   name: 'AuditBizOp',
+    //   table: 'audit_bizop',
+    //   id: 'id',
+    //   orderBy: ['createdAt', 'DESC'],
+    //   limit: 100000,
+    // },
+
+    // {
     //   name: 'BizOps',
     //   table: 'bizop',
     //   id: 'id',
@@ -145,14 +154,6 @@ export const config: TypeConfig = {
     //   id: 'id',
     //   limit: 1000000,
     //   // fetchAllAtOnce: true,
-    // },
-
-    // {
-    //   name: 'AuditBizOp',
-    //   table: 'audit_bizop',
-    //   id: 'id',
-    //   orderBy: ['createdAt', 'DESC'],
-    //   limit: 100000,
     // },
 
     // {
@@ -222,7 +223,7 @@ export type TypeTask = {
 };
 
 export type TypeConfig = {
-  copyMostOfApp: string;
+  copyMostOfApp?: string;
   parallelism: number;
   multithreaded: boolean;
   tasks: Array<TypeTask>;
