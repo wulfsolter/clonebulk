@@ -1,6 +1,8 @@
+import { TypeTask } from './config';
+
 export const regular = {
   taskPresets: {
-    copyMostOfApp: (pool: string) => [
+    copyMostOfAppTasks: (pool: string): TypeTask[] => [
       {
         name: `Automation History - ${pool}`,
         table: 'automation_history',
@@ -37,8 +39,18 @@ export const regular = {
       },
 
       {
-        name: `Bookings from - ${pool}`,
+        name: `Tracked Bookings from - ${pool}`,
         table: 'tracked_booking',
+        id: 'id',
+        orderBy: ['createdAt', 'DESC'],
+        where: { query: 'pool = ?', params: [pool] },
+        limit: 10000,
+        fetchAllAtOnce: true,
+      },
+
+      {
+        name: `Reservation from - ${pool}`,
+        table: 'reservation',
         id: 'id',
         orderBy: ['createdAt', 'DESC'],
         where: { query: 'pool = ?', params: [pool] },

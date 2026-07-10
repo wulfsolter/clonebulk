@@ -186,9 +186,9 @@ logger.info('after setting up remote');
 
 const tasks = [...config.tasks];
 
-if (config.copyMostOfApp) {
+if (config.copyMostOfApp && config.copyMostOfApp.length) {
   // to the front of array
-  tasks.unshift(...regular.taskPresets.copyMostOfApp(config.copyMostOfApp));
+  tasks.unshift(...config.copyMostOfApp.flatMap((el) => regular.taskPresets.copyMostOfAppTasks(el)));
 }
 
 // Exit if there are no tasks to run

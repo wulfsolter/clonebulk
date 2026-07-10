@@ -7,7 +7,7 @@ export const config: TypeConfig = {
   parallelism: 300,
 
   // copyMostOfApp: 'wherewolfadventures' /* cspell: disable-line */,
-  copyMostOfApp: 'v2xbpr' /* cspell: disable-line */,
+  copyMostOfApp: ['rocketrentals', 'ultimaterentals'] /* cspell: disable-line */,
 
   // The tasks themselves
   tasks: [
@@ -223,7 +223,7 @@ export type TypeTask = {
 };
 
 export type TypeConfig = {
-  copyMostOfApp?: string;
+  copyMostOfApp?: Array<string>;
   parallelism: number;
   multithreaded: boolean;
   tasks: Array<TypeTask>;
