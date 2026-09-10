@@ -245,12 +245,6 @@ await async.eachOfSeries(tasks, async (task, idx) => {
     logger.info('    -----------------------------------');
   }
 
-  if (task.truncate) {
-    logger.info('    Truncating table on local');
-    await clientTaskLocal.query(`TRUNCATE TABLE "${task.table}" CASCADE`);
-    logger.info('    -----------------------------------');
-  }
-
   // Build query to get IDs to pull, and run against local + remote
   const querySelectID = selectQueryBuilder(task);
   logger.info(`    Fetching IDs to pull from local + remote`);
@@ -288,6 +282,12 @@ await async.eachOfSeries(tasks, async (task, idx) => {
         `          fetchAllAtOnce! - Fetched all ${rows.length} rows in ${moment.duration(moment().diff(fetchingStart)).humanize()}`,
       );
 
+      if (task.truncate) {
+        logger.info('    Truncating table on local');
+        await clientTaskLocal.query(`TRUNCATE TABLE "${task.table}" CASCADE`);
+        logger.info('    -----------------------------------');
+      }
+
       logger.info(`          fetchAllAtOnce! - Inserting all ${rows.length} rows`);
       const insertingStart = moment();
       await async.eachOfLimit(rows, config.parallelism, async (row) => {
@@ -305,6 +305,11 @@ await async.eachOfSeries(tasks, async (task, idx) => {
         `          fetchAllAtOnce! - Inserted all ${rows.length} rows in ${moment.duration(moment().diff(insertingStart)).humanize()}`,
       );
     } else {
+      if (task.truncate) {
+        logger.info('    Truncating table on local');
+        await clientTaskLocal.query(`TRUNCATE TABLE "${task.table}" CASCADE`);
+        logger.info('    -----------------------------------');
+      }
       // one row at a time
       await async.eachOfLimit(IDsToPull, config.parallelism, async (remoteID) => {
         try {

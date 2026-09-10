@@ -16,6 +16,15 @@ export const regular = {
       },
 
       {
+        name: `AuditApp - ${pool}`,
+        table: 'audit_app',
+        id: 'id',
+        where: { query: 'pool = ?', params: [pool] },
+        truncate: false,
+        fetchAllAtOnce: false,
+      },
+
+      {
         name: `Automation Queue - ${pool}`,
         table: 'automation_queue',
         id: 'id',

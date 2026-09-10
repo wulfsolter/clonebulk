@@ -6,8 +6,8 @@ export const config: TypeConfig = {
   // How many select->inserts to run in parallel
   parallelism: 300,
 
-  // copyMostOfApp: 'wherewolfadventures' /* cspell: disable-line */,
-  copyMostOfApp: ['rocketrentals', 'ultimaterentals'] /* cspell: disable-line */,
+  copyMostOfApp: ['322mv7'] /* cspell: disable-line */,
+  // copyMostOfApp: ['a42gf8'] /* cspell: disable-line */,
 
   // The tasks themselves
   tasks: [
@@ -36,7 +36,7 @@ export const config: TypeConfig = {
       orderBy: ['updatedAt', 'DESC'],
       limit: 10000,
       truncate: true,
-      fetchAllAtOnce: true,
+      fetchAllAtOnce: false,
     },
 
     {
