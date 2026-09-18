@@ -6,12 +6,37 @@ export const config: TypeConfig = {
   // How many select->inserts to run in parallel
   parallelism: 300,
 
-  copyMostOfApp: ['322mv7'] /* cspell: disable-line */,
+  copyMostOfApp: ['kaitiakirafting'] /* cspell: disable-line */,
   // copyMostOfApp: ['a42gf8'] /* cspell: disable-line */,
 
   // The tasks themselves
   tasks: [
     /* cspell: disable */
+    {
+      name: `Unsubscribed Email`,
+      table: 'unsubscribed_emails',
+      id: 'id',
+      orderBy: ['createdAt', 'DESC'],
+      limit: 50000,
+      fetchAllAtOnce: true,
+      // truncate: true,
+      skipConflict: true,
+    },
+
+    {
+      name: 'join_guest_trip',
+      table: 'join_guest_trip',
+      id: 'id',
+      fetchAllAtOnce: true,
+    },
+
+    {
+      name: 'join_staff_trip',
+      table: 'join_staff_trip',
+      id: 'id',
+      fetchAllAtOnce: true,
+    },
+
     {
       name: 'BI Time Series Daily',
       table: 'bi_time_series_daily',
@@ -105,6 +130,32 @@ export const config: TypeConfig = {
     },
 
     {
+      name: '150 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 150) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      fetchAllAtOnce: true,
+    },
+
+    {
+      name: '200 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 200) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      fetchAllAtOnce: true,
+    },
+
+    {
       name: '250 most recent guests per app',
       table: 'guest',
       id: 'id',
@@ -114,9 +165,60 @@ export const config: TypeConfig = {
           `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 250) g ORDER BY a.pool DESC)`,
       },
       skipCount: true,
-      // fetchAllAtOnce: true,
+      fetchAllAtOnce: true,
     },
 
+    {
+      name: '300 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 300) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      fetchAllAtOnce: true,
+    },
+
+    {
+      name: '350 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 350) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      fetchAllAtOnce: true,
+    },
+
+    {
+      name: '400 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 400) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      fetchAllAtOnce: true,
+    },
+
+    {
+      name: '450 most recent guests per app',
+      table: 'guest',
+      id: 'id',
+      where: {
+        query:
+          // heavily inspired from https://stackoverflow.com/a/25965393/1265447
+          `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 450) g ORDER BY a.pool DESC)`,
+      },
+      skipCount: true,
+      fetchAllAtOnce: true,
+    },
     {
       name: '500 most recent guests per app',
       table: 'guest',
@@ -127,7 +229,7 @@ export const config: TypeConfig = {
           `id IN (SELECT g.id FROM app a CROSS JOIN LATERAL (SELECT g.id FROM guest g WHERE g.pool = a.pool AND a.status = 'Active' ORDER BY g."createdAt" DESC LIMIT 500) g ORDER BY a.pool DESC)`,
       },
       skipCount: true,
-      // fetchAllAtOnce: true,
+      fetchAllAtOnce: true,
     },
 
     // {
@@ -217,6 +319,7 @@ export type TypeTask = {
   orderBy?: string[];
   limit?: number;
   skipCount?: boolean;
+  // Skip rows that conflict with any unique or exclusion constraint, including composite keys.
   skipConflict?: boolean;
   truncate?: boolean;
   fetchAllAtOnce?: boolean;

@@ -2,6 +2,7 @@
 import _ from 'lodash';
 import async from 'async';
 import { exec as _exec } from 'node:child_process';
+import { createRequire } from 'node:module';
 import knex from 'knex';
 import moment from 'moment';
 import { promisify } from 'node:util';
@@ -14,14 +15,24 @@ import winston from 'winston';
 import { config, TypeTask } from './config'; // load tasks
 import { regular } from './regular';
 
-// @ts-ignore
-import * as connectionStringLocal from '../wherewolf/wherewolf-backend/config/env/development.js'; // import local DB connection string //
-// @ts-ignore
-import * as connectionStringRemote from '../wherewolf/wherewolf-backend/config/env/production.js'; // import prod DB connection string
-
 // A few quick helpers
 const screenWidth = windowSize.width;
 const exec = promisify(_exec);
+const require = createRequire(import.meta.url);
+
+type BackendEnvironment = {
+  datastores: {
+    defaultPostgres: {
+      url: string;
+    };
+  };
+};
+
+// The backend environment files use CommonJS `module.exports` and are executed by tsx at runtime.
+const localEnvironment = require('../wherewolf/wherewolf-backend/config/env/development.ts') as BackendEnvironment;
+const remoteEnvironment = require('../wherewolf/wherewolf-backend/config/env/production.ts') as BackendEnvironment;
+const localDatabaseUrl = localEnvironment.datastores.defaultPostgres.url;
+const remoteDatabaseUrl = remoteEnvironment.datastores.defaultPostgres.url;
 
 // Set up logger
 const logger = winston.createLogger({
@@ -31,6 +42,170 @@ const logger = winston.createLogger({
     }),
   ],
 });
+
+type ClientWithTransferCounters = {
+  connection?: {
+    stream?: {
+      bytesRead?: number;
+      bytesWritten?: number;
+    };
+  };
+};
+
+const formatBytes = (bytes: number) => {
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  const precision = unitIndex === 0 || value >= 100 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(precision)} ${units[unitIndex]}`;
+};
+
+const formatElapsed = (milliseconds: number) => {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return [hours, minutes, seconds]
+    .map((value, index) => (index === 0 ? value.toString() : value.toString().padStart(2, '0')))
+    .join(':');
+};
+
+/* cspell:disable-next-line */
+// node-postgres buffers query results, so a large query otherwise appears idle until every row has arrived.
+// Its connection stream exposes cumulative byte counters that let us show activity without changing query behavior.
+const withTransferProgress = async <Result>(
+  client: pg.PoolClient,
+  operation: () => Promise<Result>,
+): Promise<Result> => {
+  const stream = (client as unknown as ClientWithTransferCounters).connection?.stream;
+  const canReadCounters = typeof stream?.bytesRead === 'number' && typeof stream?.bytesWritten === 'number';
+
+  if (!canReadCounters || !stream) {
+    return operation();
+  }
+
+  const startedAt = Date.now();
+  const startingBytesRead = stream.bytesRead || 0;
+  const startingBytesWritten = stream.bytesWritten || 0;
+  let previousSampleAt = startedAt;
+  let previousBytesRead = startingBytesRead;
+  let previousBytesWritten = startingBytesWritten;
+
+  const renderProgress = () => {
+    const sampledAt = Date.now();
+    const bytesRead = stream.bytesRead || 0;
+    const bytesWritten = stream.bytesWritten || 0;
+    const sampleSeconds = Math.max((sampledAt - previousSampleAt) / 1000, 0.001);
+    const downloaded = Math.max(bytesRead - startingBytesRead, 0);
+    const uploaded = Math.max(bytesWritten - startingBytesWritten, 0);
+    const downloadRate = Math.max(bytesRead - previousBytesRead, 0) / sampleSeconds;
+    const uploadRate = Math.max(bytesWritten - previousBytesWritten, 0) / sampleSeconds;
+    const message = `                fetchAllAtOnce! - Transfer: down ${formatBytes(downloaded)} (${formatBytes(downloadRate)}/s), up ${formatBytes(uploaded)} (${formatBytes(uploadRate)}/s), elapsed ${formatElapsed(sampledAt - startedAt)}`;
+
+    if (process.stdout.isTTY) {
+      process.stdout.clearLine(0);
+      process.stdout.cursorTo(0);
+      process.stdout.write(message);
+    } else {
+      logger.info(message.trimStart());
+    }
+
+    previousSampleAt = sampledAt;
+    previousBytesRead = bytesRead;
+    previousBytesWritten = bytesWritten;
+  };
+
+  const progressInterval = globalThis.setInterval(renderProgress, process.stdout.isTTY ? 1000 : 5000);
+
+  try {
+    return await operation();
+  } finally {
+    clearInterval(progressInterval);
+    renderProgress();
+    if (process.stdout.isTTY) {
+      process.stdout.write('\n');
+    }
+  }
+};
+
+const MAX_INSERT_ROWS = 1000;
+const MAX_INSERT_PARAMETERS = 30000;
+const conflictClauseForTask = (task: TypeTask) =>
+  task.skipConflict ? ' ON CONFLICT DO NOTHING' : ` ON CONFLICT (${pg.escapeIdentifier(task.id)}) DO NOTHING`;
+
+const insertRowsInBatches = async (client: pg.PoolClient, task: TypeTask, rows: pg.QueryResultRow[]) => {
+  if (!rows.length) {
+    return { inserted: 0, skipped: 0 };
+  }
+
+  const columns = Object.keys(rows[0]);
+  if (!columns.length) {
+    throw new Error(`Cannot insert rows into ${task.table}: the remote query returned no columns`);
+  }
+
+  const rowsPerBatch = Math.max(1, Math.min(MAX_INSERT_ROWS, Math.floor(MAX_INSERT_PARAMETERS / columns.length)));
+  const batchCount = Math.ceil(rows.length / rowsPerBatch);
+  const escapedColumns = columns.map((column) => pg.escapeIdentifier(column)).join(', ');
+  const conflictClause = conflictClauseForTask(task);
+  const startedAt = Date.now();
+  let displayedProgress = false;
+  let insertedRows = 0;
+
+  logger.info(
+    `          fetchAllAtOnce! - Using ${batchCount} insert batches of up to ${rowsPerBatch} rows (${columns.length} columns)`,
+  );
+
+  try {
+    for (let offset = 0; offset < rows.length; offset += rowsPerBatch) {
+      const batch = rows.slice(offset, offset + rowsPerBatch);
+      const values = batch.flatMap((row) =>
+        columns.map((column) => {
+          const value = row[column];
+          return _.isArray(value) ? JSON.stringify(value) : value;
+        }),
+      );
+      const valueGroups = batch.map((_row, rowIndex) => {
+        const firstParameter = rowIndex * columns.length + 1;
+        const placeholders = columns.map((_, columnIndex) => `$${firstParameter + columnIndex}`);
+        return `(${placeholders.join(', ')})`;
+      });
+
+      const result = await client.query({
+        text: `INSERT INTO ${pg.escapeIdentifier(task.table)} (${escapedColumns}) VALUES ${valueGroups.join(', ')}${conflictClause} /* source:clonebulk-fetchAllAtOnce-insert task:${task.name.replace(/\W/g, '')} */`,
+        values,
+      });
+
+      insertedRows += result.rowCount || 0;
+      const processedRows = Math.min(offset + batch.length, rows.length);
+      const skippedRows = processedRows - insertedRows;
+      const batchNumber = Math.floor(offset / rowsPerBatch) + 1;
+      const elapsedSeconds = Math.max((Date.now() - startedAt) / 1000, 0.001);
+      const message = `               fetchAllAtOnce! - Processed ${processedRows}/${rows.length} rows (${Math.round((processedRows / rows.length) * 100)}%) - inserted ${insertedRows}, skipped ${skippedRows} - batch ${batchNumber}/${batchCount} - ${Math.round(processedRows / elapsedSeconds)} rows/s`;
+
+      if (process.stdout.isTTY) {
+        process.stdout.clearLine(0);
+        process.stdout.cursorTo(0);
+        process.stdout.write(message);
+        displayedProgress = true;
+      } else if (batchNumber % 10 === 0 || batchNumber === batchCount) {
+        logger.info(message.trimStart());
+      }
+    }
+  } finally {
+    if (displayedProgress) {
+      process.stdout.write('\n');
+    }
+  }
+
+  return { inserted: insertedRows, skipped: rows.length - insertedRows };
+};
 
 let alreadyCleaningUp = false;
 const cleanup = async () => {
@@ -139,7 +314,7 @@ await async.doUntil(
       // ssh -f -N -T -M -L 5433:hoffman-cluster.cluster-c5hzncxdxaaa.eu-central-1.rds.amazonaws.com:5432 clonerow-tunnel /* cspell: disable-line /*
 
       const { stdout: tunnelUpOutput, stderr: tunnelUpError } = await exec(
-        `ssh -f -N -T -M -o ControlMaster=auto -L ${localPortToRemote}:${parse.parse(connectionStringRemote.default.datastores.defaultPostgres.url).host}:5432 clonerow-tunnel`,
+        `ssh -f -N -T -M -o ControlMaster=auto -L ${localPortToRemote}:${parse.parse(remoteDatabaseUrl).host}:5432 clonerow-tunnel`,
       );
 
       logger.info(' --- created new tunnel', {
@@ -165,13 +340,13 @@ logger.info('');
 
 // Create connections to local and remote DBs
 const poolLocal = new pg.Pool({
-  connectionString: connectionStringLocal.default.datastores.defaultPostgres.url,
+  connectionString: localDatabaseUrl,
   max: _.min([config.parallelism, 10]),
 });
 
 const poolRemote = new pg.Pool({
-  user: parse.parse(connectionStringRemote.default.datastores.defaultPostgres.url).user,
-  password: parse.parse(connectionStringRemote.default.datastores.defaultPostgres.url).password,
+  user: parse.parse(remoteDatabaseUrl).user,
+  password: parse.parse(remoteDatabaseUrl).password,
   host: 'localhost',
   port: localPortToRemote,
   max: _.min([config.parallelism, 10]),
@@ -266,16 +441,18 @@ await async.eachOfSeries(tasks, async (task, idx) => {
     const clientRemote = await poolRemote.connect();
 
     if (task.fetchAllAtOnce) {
-      // Copy all rows down in one go, then insert individually
+      // Copy all rows down in one go, then insert them in batches
       const selectQuery = `SELECT * FROM "${task.table}" WHERE ${task.id} = ANY($1) /* source:clonebulk-fetchAllAtOnce task:${task.name.replace(/\W/g, '')} */`;
       const fetchingStart = moment();
       logger.info(`          fetchAllAtOnce! - Fetching all ${IDsToPull.length} rows - query: ${selectQuery}`);
 
       const rows = (
-        await clientRemote.query({
-          text: selectQuery,
-          values: [IDsToPull],
-        })
+        await withTransferProgress(clientRemote, () =>
+          clientRemote.query({
+            text: selectQuery,
+            values: [IDsToPull],
+          }),
+        )
       ).rows;
 
       logger.info(
@@ -290,19 +467,9 @@ await async.eachOfSeries(tasks, async (task, idx) => {
 
       logger.info(`          fetchAllAtOnce! - Inserting all ${rows.length} rows`);
       const insertingStart = moment();
-      await async.eachOfLimit(rows, config.parallelism, async (row) => {
-        await clientLocal.query({
-          text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')})${task.skipConflict ? '' : ` ON CONFLICT (${task.id}) DO NOTHING`}`,
-          values: Object.values(row).map((el) => {
-            if (_.isArray(el)) {
-              return JSON.stringify(el);
-            }
-            return el;
-          }),
-        });
-      });
+      const insertResult = await insertRowsInBatches(clientLocal, task, rows);
       logger.info(
-        `          fetchAllAtOnce! - Inserted all ${rows.length} rows in ${moment.duration(moment().diff(insertingStart)).humanize()}`,
+        `          fetchAllAtOnce! - Processed all ${rows.length} rows in ${moment.duration(moment().diff(insertingStart)).humanize()} - inserted ${insertResult.inserted}, skipped ${insertResult.skipped}`,
       );
     } else {
       if (task.truncate) {
@@ -320,6 +487,7 @@ await async.eachOfSeries(tasks, async (task, idx) => {
             'seconds',
           );
 
+          /* cspell:disable-next-line */
           const stringProgress = `\r\x1b[32minfo:     \x1b[37mFetching ${index.toString().padStart(IDsToPull.length.toString().length)}/${IDsToPull.length} - ${Math.round(
             (index / IDsToPull.length) * 100,
           )
@@ -351,7 +519,7 @@ await async.eachOfSeries(tasks, async (task, idx) => {
           }
 
           await clientLocal.query({
-            text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')})${task.skipConflict ? '' : ` ON CONFLICT (${task.id}) DO NOTHING`}`,
+            text: `INSERT INTO "${task.table}" VALUES (${[...Array(Object.keys(row).length).keys()].map((x) => `$${x + 1}`).join(' ,')})${conflictClauseForTask(task)}`,
             values: Object.values(row).map((el) => {
               if (_.isArray(el)) {
                 return JSON.stringify(el);
