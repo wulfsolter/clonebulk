@@ -137,6 +137,8 @@ const withTransferProgress = async <Result>(
 
 const MAX_INSERT_ROWS = 1000;
 const MAX_INSERT_PARAMETERS = 30000;
+// Refuse to copy more than this many rows when a task has no explicit `limit`
+const SAFETY_ROW_LIMIT = 50000;
 const conflictClauseForTask = (task: TypeTask) =>
   task.skipConflict ? ' ON CONFLICT DO NOTHING' : ` ON CONFLICT (${pg.escapeIdentifier(task.id)}) DO NOTHING`;
 
@@ -187,7 +189,7 @@ const insertRowsInBatches = async (client: pg.PoolClient, task: TypeTask, rows: 
       const skippedRows = processedRows - insertedRows;
       const batchNumber = Math.floor(offset / rowsPerBatch) + 1;
       const elapsedSeconds = Math.max((Date.now() - startedAt) / 1000, 0.001);
-      const message = `               fetchAllAtOnce! - Processed ${processedRows}/${rows.length} rows (${Math.round((processedRows / rows.length) * 100)}%) - inserted ${insertedRows}, skipped ${skippedRows} - batch ${batchNumber}/${batchCount} - ${Math.round(processedRows / elapsedSeconds)} rows/s`;
+      const message = `                fetchAllAtOnce! - Processed ${processedRows}/${rows.length} rows (${Math.round((processedRows / rows.length) * 100)}%) - inserted ${insertedRows}, skipped ${skippedRows} - batch ${batchNumber}/${batchCount} - ${Math.round(processedRows / elapsedSeconds)} rows/s`;
 
       if (process.stdout.isTTY) {
         process.stdout.clearLine(0);
@@ -402,17 +404,24 @@ await async.eachOfSeries(tasks, async (task, idx) => {
   logger.info('    -----------------------------------');
 
   if (!task.skipCount) {
-    // Guard against doing a huge query - if more than 50,000 or task.limit rows, exit
+    // Guard against doing a huge query - if a task has no `limit` and matches more than SAFETY_ROW_LIMIT rows, exit
     const queryCount = countQueryBuilder(task);
     logger.info('    Counting rows on remote to check for unexpected large result set.');
     logger.info(`          Query: ${queryCount}`);
 
     const countRemote = parseInt((await clientTaskRemote.query(queryCount)).rows[0].count, 10);
-    if (!task.limit && countRemote > Math.max(50000, _.get(task, 'limit', 0))) {
-      logger.error(
-        `Count returned ${countRemote} rows on remote. Exiting because no task.limit is set, this is unexpected, and/or greater than task.limit`,
-      );
-      process.exit();
+    if (!task.limit && countRemote > SAFETY_ROW_LIMIT) {
+      logger.error(' ');
+      logger.error('    *** ABORTING - SAFETY GUARD TRIPPED ***');
+      logger.error(`    Task "${task.name}" (table ${task.table}) would copy ${countRemote} rows from remote,`);
+      logger.error(`    which is over the ${SAFETY_ROW_LIMIT} row safety limit, and the task has no \`limit\` set.`);
+      logger.error(' ');
+      logger.error('    To proceed, do one of the following in the task definition:');
+      logger.error('      - set `limit` to the max number of rows you actually want to copy');
+      logger.error('      - narrow `where` so fewer rows match');
+      logger.error('      - set `skipCount: true` to bypass this check entirely (you really do want them all)');
+      logger.error(' ');
+      process.exit(1);
     }
     logger.info(
       `          Found ${countRemote} rows on remote ${task.limit ? ` - only fetching up to ${Math.min(task.limit, countRemote)} as per task.limit` : ''}`,
