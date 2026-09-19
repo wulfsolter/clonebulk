@@ -27,6 +27,7 @@ export const config: TypeConfig = {
       name: 'join_guest_trip',
       table: 'join_guest_trip',
       id: 'id',
+      limit: 50000,
       fetchAllAtOnce: true,
     },
 
@@ -34,6 +35,7 @@ export const config: TypeConfig = {
       name: 'join_staff_trip',
       table: 'join_staff_trip',
       id: 'id',
+      limit: 50000,
       fetchAllAtOnce: true,
     },
 
